@@ -1,0 +1,45 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use phind\DnsHandler;
+use phind\Metrics;
+use phind\NullExporter;
+use phind\OtlpExporter;
+use phind\Parser;
+use phind\RecordStore;
+use phind\Response;
+use phind\Resolver;
+use phind\Server;
+use phind\Upstream;
+
+$otlpEndpoint = getenv('PHIND_OTLP_ENDPOINT') ?: '';
+$exporter = $otlpEndpoint !== ''
+    ? new OtlpExporter($otlpEndpoint, 0.25)
+    : new NullExporter();
+
+$home = getenv('HOME') ?: sys_get_temp_dir();
+$storagePath = getenv('PHIND_STORAGE_PATH') ?: ($home . '/.phind');
+$recordsFile = $storagePath . '/records.json';
+$metricsFile = $storagePath . '/metrics.json';
+
+if (!is_dir($storagePath)) {
+    mkdir($storagePath, 0777, true);
+}
+
+$metrics = new Metrics($metricsFile, $exporter);
+$metrics->startAutoFlush(1000);
+
+$store = new RecordStore($recordsFile, [
+    '*.phind' => [
+        ['type' => 'A', 'value' => '127.0.0.1', 'ttl' => 300],
+    ],
+]);
+
+$upstream = new Upstream($metrics, '1.1.1.1', 53, 2.0);
+$resolver = new Resolver($store, $metrics, $upstream);
+$handler = new DnsHandler(new Parser(), $resolver, new Response());
+
+$server = new Server('0.0.0.0', 8053, $handler);
+$server->start();

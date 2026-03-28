@@ -1,0 +1,39 @@
+{
+  "name": "cr0w/phind",
+  "description": "Local-first service resolution",
+  "type": "library",
+  "license": "MIT",
+  "keywords": ["dns", "local"],
+  "authors": [
+      {
+          "name": "Denny Shimkoski",
+          "email": "denny@cr0w.digital"
+      }
+  ],
+  "require": {
+    "php": "^8.2",
+    "ext-swoole": "*",
+    "open-telemetry/sdk": "^1.14",
+    "open-telemetry/exporter-otlp": "^1.4",
+    "symfony/http-client": "^8.0",
+    "nyholm/psr7": "^1.8"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^13.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "phind\\": "src/"
+    }
+  },
+  "bin": ["bin/phind", "bin/phind-http"],
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": true,
+      "tbachert/spi": true
+    }
+  },
+  "scripts": {
+      "test": "phpunit"
+  }
+}
